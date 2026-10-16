@@ -17,7 +17,7 @@ Most browser automation tools launch a fresh, isolated browser. This one connect
 ### As a pi skill
 
 ```bash
-pi install git:github.com/pasky/chrome-cdp-skill@v1.0.1
+pi install git:github.com/mydnicq/use-my-browser-skill
 ```
 
 ### For other agents (Amp, Claude Code, Cursor, etc.)
