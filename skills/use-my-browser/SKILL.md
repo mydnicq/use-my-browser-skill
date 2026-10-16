@@ -1,11 +1,17 @@
 ---
-name: chrome-cdp
-description: Interact with local Chrome browser session (only on explicit user approval after being asked to inspect, debug, or interact with a page open in Chrome)
+name: use-my-browser
+description: >-
+  Control the user's own running Chrome/Chromium/Brave/Edge — their real open
+  tabs and logged-in sessions. Use when the user refers to a page they have open
+  ("already open in a tab", "in my browser"), a site that needs their login, or
+  asks to check a page for console/network errors, screenshot it, click, type,
+  navigate, or open/close tabs. Not for headless scraping of public pages.
+  Ask before acting if the user hasn't asked you to use their browser.
 ---
 
-# Chrome CDP
+# Use My Browser
 
-Lightweight Chrome DevTools Protocol CLI. Connects directly via WebSocket — no Puppeteer, works with 100+ tabs, instant connection.
+Lightweight Chrome DevTools Protocol CLI for the user's running browser. Connects directly via WebSocket — no Puppeteer, works with 100+ tabs, instant connection.
 
 ## Prerequisites
 

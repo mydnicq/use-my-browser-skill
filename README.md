@@ -1,4 +1,4 @@
-# chrome-cdp
+# use-my-browser
 
 Let your AI agent see and interact with your **live Chrome session** — the tabs you already have open, your logged-in accounts, your current page state. No browser automation framework, no separate browser instance, no re-login.
 
@@ -22,7 +22,7 @@ pi install git:github.com/pasky/chrome-cdp-skill@v1.0.1
 
 ### For other agents (Amp, Claude Code, Cursor, etc.)
 
-Clone or copy the `skills/chrome-cdp/` directory wherever your agent loads skills or context from. The only runtime dependency is **Node.js 22+** — no npm install needed.
+Clone or copy the `skills/use-my-browser/` directory wherever your agent loads skills or context from. The only runtime dependency is **Node.js 22+** — no npm install needed.
 
 ### Enable remote debugging in Chrome
 
@@ -63,7 +63,7 @@ scripts/cdp.mjs stop   [target]                   # detach from one tab, or stop
 
 ## Why not chrome-devtools-mcp?
 
-[chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp) reconnects on every command, so Chrome's "Allow debugging" modal can re-appear repeatedly and target enumeration times out with many tabs open. `chrome-cdp` holds one persistent connection for all tabs — the modal fires once, and it handles 100+ tabs reliably.
+[chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp) reconnects on every command, so Chrome's "Allow debugging" modal can re-appear repeatedly and target enumeration times out with many tabs open. `use-my-browser` holds one persistent connection for all tabs — the modal fires once, and it handles 100+ tabs reliably.
 
 ## How it works
 
