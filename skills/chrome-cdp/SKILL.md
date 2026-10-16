@@ -65,8 +65,9 @@ scripts/cdp.mjs netlog   <target> [flags...]        # network requests buffered 
                                                    # flags (combinable): failed | blocked | method=GET|POST|...
                                                    #                     status=N | grep=<url-text> | last=N
 scripts/cdp.mjs netdetail <target> <N>             # full JSON details of network entry N (index shown in netlog)
-scripts/cdp.mjs open    [url]                  # open new tab (each triggers Allow prompt)
-scripts/cdp.mjs stop    [target]               # stop daemon(s)
+scripts/cdp.mjs open    [url]                  # open new tab (no extra Allow prompt)
+scripts/cdp.mjs close   <target>               # close a tab
+scripts/cdp.mjs stop    [target]               # detach from one tab, or stop the daemon
 ```
 
 ## Coordinates
@@ -83,4 +84,5 @@ CSS px = screenshot image px / DPR
 
 - Prefer `snap --compact` over `html` for page structure.
 - Use `type` (not eval) to enter text in cross-origin iframes — `click`/`clickxy` to focus first, then `type`.
-- Chrome shows an "Allow debugging" modal once per tab on first access. A background daemon keeps the session alive so subsequent commands need no further approval. Daemons auto-exit after 20 minutes of inactivity.
+- Chrome shows an "Allow remote debugging?" prompt for every new WebSocket connection. All commands go through one background daemon that holds a single connection for all tabs, so the user approves once per daemon. The daemon auto-exits after 2 hours of inactivity (`CDP_IDLE_MINUTES`) or when Chrome disconnects.
+- While the prompt is open, commands print `Waiting for "Allow remote debugging?" approval in Chrome...` and wait up to 120s. Tell the user to click Allow; do not retry in a loop, and do not run `stop` unless you're done, since the next command will prompt again.

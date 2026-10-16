@@ -54,18 +54,19 @@ scripts/cdp.mjs netlog    <target> [flags...]      # network requests buffered s
                                                   # flags: failed|blocked|method=GET|POST|...
                                                   #        status=N  grep=<url-text>  last=N
 scripts/cdp.mjs netdetail <target> <N>            # full details of network entry N (incl. headers & body)
-scripts/cdp.mjs open   [url]                      # open new tab (triggers Allow prompt)
-scripts/cdp.mjs stop   [target]                   # stop daemon(s)
+scripts/cdp.mjs open   [url]                      # open new tab
+scripts/cdp.mjs close  <target>                   # close a tab
+scripts/cdp.mjs stop   [target]                   # detach from one tab, or stop the daemon
 ```
 
 `<target>` is a unique prefix of the targetId shown by `list`.
 
 ## Why not chrome-devtools-mcp?
 
-[chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp) reconnects on every command, so Chrome's "Allow debugging" modal can re-appear repeatedly and target enumeration times out with many tabs open. `chrome-cdp` holds one persistent daemon per tab — the modal fires once, and it handles 100+ tabs reliably.
+[chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp) reconnects on every command, so Chrome's "Allow debugging" modal can re-appear repeatedly and target enumeration times out with many tabs open. `chrome-cdp` holds one persistent connection for all tabs — the modal fires once, and it handles 100+ tabs reliably.
 
 ## How it works
 
-Connects directly to Chrome's remote debugging WebSocket — no Puppeteer, no intermediary. On first access to a tab, a lightweight background daemon is spawned that holds the session open. Chrome's "Allow debugging" modal appears once per tab; subsequent commands reuse the daemon silently. Daemons auto-exit after 20 minutes of inactivity.
+Connects directly to Chrome's remote debugging WebSocket — no Puppeteer, no intermediary. The first command spawns a lightweight background daemon that holds a single WebSocket to the browser and attaches to tabs over it. Chrome asks "Allow remote debugging?" for every new WebSocket connection, so the prompt appears once per daemon — not per tab or per command. Commands started while the prompt is open wait for it (up to 120s) instead of opening more connections. The daemon auto-exits after 2 hours of inactivity (set `CDP_IDLE_MINUTES` to change) or when Chrome disconnects.
 
 This approach is also why it handles 100+ open tabs reliably, where tools built on Puppeteer often time out during target enumeration.
