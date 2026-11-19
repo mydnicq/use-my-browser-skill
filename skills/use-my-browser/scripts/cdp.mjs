@@ -226,9 +226,14 @@ class CDP {
 // Command implementations — return strings, take (cdp, sessionId)
 // ---------------------------------------------------------------------------
 
+// browserContextIds created by `open --isolated`. A hidden tab there has type "other", not "page".
+const isolatedContexts = new Set();
+
 async function getPages(cdp) {
   const { targetInfos } = await cdp.send('Target.getTargets');
-  return targetInfos.filter(t => t.type === 'page' && !t.url.startsWith('chrome://'));
+  return targetInfos.filter(t =>
+    (t.type === 'page' || (t.type === 'other' && isolatedContexts.has(t.browserContextId)))
+    && !t.url.startsWith('chrome://'));
 }
 
 function formatPageList(pages) {
@@ -898,8 +903,23 @@ async function runDaemon() {
           break;
         }
         case 'open': {
-          const url = args[0] || 'about:blank';
-          const { targetId } = await cdp.send('Target.createTarget', { url });
+          // --isolated: a new browser context (like a private window) with its own cookies and
+          // localStorage, so a sign-in there never touches other tabs. Closing its tab deletes it.
+          // --hidden (with --isolated): the tab runs and can be driven, but has no window or tab strip.
+          const isolated = args.includes('--isolated');
+          const hidden = isolated && args.includes('--hidden');
+          const url = args.find(a => !a.startsWith('--')) || 'about:blank';
+          let browserContextId;
+          if (isolated) {
+            ({ browserContextId } = await cdp.send('Target.createBrowserContext', { disposeOnDetach: true }));
+            isolatedContexts.add(browserContextId);
+          }
+          const { targetId } = await cdp.send('Target.createTarget', browserContextId ? { url, browserContextId, ...(hidden ? { hidden: true } : {}) } : { url });
+          if (hidden) {
+            // A hidden tab has no window, so it has no size and screenshots time out. Give it a desktop viewport.
+            const tab = await getTab(targetId);
+            await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false }, tab.sessionId);
+          }
           const pages = await getPages(cdp);
           const ids = pages.some(p => p.targetId === targetId) ? pages.map(p => p.targetId) : [...pages.map(p => p.targetId), targetId];
           result = `Opened new tab: ${targetId.slice(0, getDisplayPrefixLength(ids))}  ${url}`;
@@ -907,7 +927,12 @@ async function runDaemon() {
         }
         case 'close': {
           const targetId = await resolveTarget(target);
+          const { targetInfo } = await cdp.send('Target.getTargetInfo', { targetId });
           await cdp.send('Target.closeTarget', { targetId });
+          // Delete an isolated context with its tab; never touch a profile's own context.
+          if (isolatedContexts.delete(targetInfo.browserContextId)) {
+            await cdp.send('Target.disposeBrowserContext', { browserContextId: targetInfo.browserContextId }).catch(() => {});
+          }
           const tab = tabs.get(targetId);
           if (tab) dropTab(tab);
           result = `Closed tab ${target}`;
@@ -1139,6 +1164,8 @@ Usage: cdp <command> [args]
                                                         status=N (exact) | grep=<url-text> | last=N
   netdetail <target> <N>            Full JSON details of network entry N
   open  [url]                       Open a new tab (default: about:blank)
+  open  --isolated [--hidden] [url] Open a tab in a new private browser context (own storage);
+                                    --hidden: no window or tab strip, 1280x800 viewport, still drivable
   close <target>                    Close a tab
   stop  [target]                    Detach from one tab, or stop the daemon
 
@@ -1198,7 +1225,7 @@ async function main() {
   if (cmd === 'list' || cmd === 'ls') {
     req = { cmd: 'list' };
   } else if (cmd === 'open') {
-    req = { cmd: 'open', args: [args[0] || 'about:blank'] };
+    req = { cmd: 'open', args: args.length ? args : ['about:blank'] };
   } else if (cmd === 'close') {
     if (!args[0]) { console.error('Error: target ID required. Run "cdp list" first.'); process.exit(1); }
     req = { cmd: 'close', target: args[0] };

@@ -72,6 +72,7 @@ scripts/cdp.mjs netlog   <target> [flags...]        # network requests buffered 
                                                    #                     status=N | grep=<url-text> | last=N
 scripts/cdp.mjs netdetail <target> <N>             # full JSON details of network entry N (index shown in netlog)
 scripts/cdp.mjs open    [url]                  # open new tab (no extra Allow prompt)
+scripts/cdp.mjs open --isolated [--hidden] [url]  # tab in a new private context (own cookies/localStorage); --hidden: no window; close deletes it
 scripts/cdp.mjs close   <target>               # close a tab
 scripts/cdp.mjs stop    [target]               # detach from one tab, or stop the daemon
 ```
